@@ -1,17 +1,14 @@
-$pythonPath = (Get-Command python.exe -ErrorAction SilentlyContinue).Source
+$py = Get-ChildItem "$env:LOCALAPPDATA\Programs\Python" -Directory -Recurse -ErrorAction SilentlyContinue |
+  Where-Object { Test-Path "$($_.FullName)\python.exe" } |
+  Sort-Object LastWriteTime -Descending | Select-Object -First 1
 
-if (-not $pythonPath) {
-    $pythonPath = (Get-ChildItem -Path "$env:LOCALAPPDATA\Programs\Python" -Directory -Recurse -ErrorAction SilentlyContinue |
-    Where-Object { Test-Path "$($_.FullName)\python.exe" } |
-    Sort-Object LastWriteTime -Descending |
-    Select-Object -First 1).FullName
-}
-
-if ($pythonPath) {
-    $pythonDir = Split-Path $pythonPath
-    $scriptsDir = Join-Path $pythonDir "Scripts"
-    setx PATH "$env:PATH;$pythonDir;$scriptsDir"
-    Write-Host "✅ Python adicionado ao PATH. Feche e reabra o terminal."
+if ($py) {
+  $pythonDir = $py.FullName
+  $scriptsDir = Join-Path $pythonDir "Scripts"
+  $userPath = [Environment]::GetEnvironmentVariable("Path","User")
+  $newPath  = "$pythonDir;$scriptsDir;$userPath"
+  [Environment]::SetEnvironmentVariable("Path",$newPath,"User")
+  Write-Host "✅ Python e Scripts colocados no início do PATH do usuário. Abra um novo CMD e teste: python --version"
 } else {
-    Write-Host "❌ Python não encontrado no diretório padrão."
+  Write-Host "❌ Não encontrei uma pasta com python.exe no diretório padrão do usuário."
 }
